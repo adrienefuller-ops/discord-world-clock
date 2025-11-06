@@ -1,20 +1,25 @@
-# --- Keep-Alive Web Server for Render Free Plan ---
-from flask import Flask
-import threading
-import os
+# --- Keep-Alive HTTP Server (no external deps) ---
+from http.server import HTTPServer, BaseHTTPRequestHandler
+import threading, os
 
-app = Flask('')
+class _PingHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"World Clock Bot is alive!")
 
-@app.route('/')
-def home():
-    return "World Clock Bot is alive!"
+    # silence default logging
+    def log_message(self, format, *args):
+        pass
 
-def run():
-    port = int(os.environ.get("PORT", 10000))  # Render provides PORT env var
-    app.run(host='0.0.0.0', port=port)
+def _run_keepalive():
+    port = int(os.environ.get("PORT", "10000"))  # Render sets PORT
+    httpd = HTTPServer(("", port), _PingHandler)
+    httpd.serve_forever()
 
-threading.Thread(target=run).start()
-# --- End Keep-Alive Section ---
+threading.Thread(target=_run_keepalive, daemon=True).start()
+# --- End keep-alive ---
+
 import os
 import json
 from datetime import datetime
